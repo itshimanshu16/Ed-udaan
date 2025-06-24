@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://ed-udaan-1.onrender.com/api", // Your backend base URL
+  baseURL: "https://ed-udaan.onrender.com/api", // Your backend base URL
 });
 
 // Register API
