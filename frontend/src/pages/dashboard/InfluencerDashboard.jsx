@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; // import styles for toast
+
 import { FaCoins, FaUsers, FaClipboardList } from 'react-icons/fa';
 import InfluencerProfileForm from '../../components/InfluencerProfileForm';
 import ProgressBar from '../../components/ProgressBar';
 
 const InfluencerDashboard = () => {
+  const [loadingCampaignIds, setLoadingCampaignIds] = useState([]);
   const [applications, setApplications] = useState([]);
   const [availableCampaigns, setAvailableCampaigns] = useState([]);
   const [activeCampaigns, setActiveCampaigns] = useState([]);
@@ -61,19 +65,35 @@ const InfluencerDashboard = () => {
   };
 
   const applyToCampaign = async (_id) => {
+    if (loadingCampaignIds.includes(_id)) return;
+  
+    setLoadingCampaignIds((prev) => [...prev, _id]);
+    
+    toast.success('✅ Application submitted!', {
+      position: 'top-right',
+      autoClose: 2500,
+    });
     try {
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/campaigns/apply/${_id}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert('✅ Application submitted successfully!');
+  
+  
       await fetchDashboardData();
+  
       setTimeout(() => {
         appliedSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 200);
     } catch (err) {
-      alert(err.response?.data?.message || 'Error applying');
+      toast.error(err.response?.data?.message || '❌ Error applying to campaign', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    } finally {
+      setLoadingCampaignIds((prev) => prev.filter((id) => id !== _id));
     }
   };
+  
 
   const renderBadge = (status) => {
     const base = 'px-3 py-1 rounded-full text-xs font-semibold';
@@ -259,14 +279,23 @@ const InfluencerDashboard = () => {
                     <p className="text-xs text-gray-400">Platform: {c.platform}</p>
                     <p className="text-xs text-gray-400 mb-3">Budget: ₹{c.budget}</p>
                     <button
-                      onClick={() => applyToCampaign(c._id)}
-                      className={`${
-                        alreadyRejected ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
-                      } text-white px-4 py-2 rounded-full text-sm font-medium`}
-                      disabled={alreadyRejected}
-                    >
-                      {alreadyRejected ? 'Rejected' : 'Apply'}
-                    </button>
+  onClick={() => applyToCampaign(c._id)}
+  className={`${
+    alreadyRejected
+      ? 'bg-gray-400 cursor-not-allowed'
+      : loadingCampaignIds.includes(c._id)
+      ? 'bg-indigo-400 cursor-not-allowed'
+      : 'bg-indigo-600 hover:bg-indigo-700'
+  } text-white px-4 py-2 rounded-full text-sm font-medium transition`}
+  disabled={alreadyRejected || loadingCampaignIds.includes(c._id)}
+>
+  {alreadyRejected
+    ? 'Rejected'
+    : loadingCampaignIds.includes(c._id)
+    ? 'Applying...'
+    : 'Apply'}
+</button>
+
                   </motion.div>
                 );
               })}
@@ -284,12 +313,17 @@ const InfluencerDashboard = () => {
       <p className="text-gray-300">Loading profile...</p>
     ) : editProfileMode ? (
       <InfluencerProfileForm
-        onCancel={() => setEditProfileMode(false)}
-        onSaved={() => {
-          setEditProfileMode(false);
-          fetchProfile(); // ✅ re-fetch updated profile after save
-        }}
-      />
+      onCancel={() => setEditProfileMode(false)}
+      onSaved={() => {
+        setEditProfileMode(false);
+        toast.success("✅ Profile updated successfully!", {
+          position: "top-right",
+          autoClose: 2500,
+        });
+        fetchProfile(); // refresh profile data after update
+      }}
+    />
+    
     ) : profile ? (
       <div className="    max-w-xl mx-auto bg-white/10 p-6 rounded-xl border border-white/10 shadow-xl backdrop-blur-lg space-y-4 text-white">
   <div className="text-center mb-2">
@@ -335,6 +369,9 @@ const InfluencerDashboard = () => {
           <InfluencerProfileForm />
         </motion.div>
       )}
+
+ 
+
     </div>
   );
 };
@@ -347,6 +384,7 @@ const StatCard = ({ icon, label, value }) => (
       <p className="text-sm text-gray-300">{label}</p>
       <p className="text-2xl font-bold">{value}</p>
     </div>
+   
   </div>
 );
 
