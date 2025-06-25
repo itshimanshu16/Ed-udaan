@@ -13,6 +13,10 @@ import AdminStats from './pages/dashboard/AdminStats';
 import AdminApplications from './pages/dashboard/AdminApplications';
 import ForgotPassword from './pages/ForgotPassword'; // adjust path if needed
 import ContactPage from './pages/ContactPage';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+
 function App() {
   return (
     <Router>
@@ -61,6 +65,7 @@ function App() {
 } />
         
       </Routes>
+      <ToastContainer position="top-right" autoClose={2500} />
     </Router>
   );
 }
