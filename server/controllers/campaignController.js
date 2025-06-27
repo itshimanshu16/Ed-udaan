@@ -31,8 +31,23 @@ exports.createCampaign = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const campaign = new Campaign({ ...req.body, admin : req.user._id });
-    await campaign.save();
+    const {
+      title,
+      description,
+      formLink,
+      moneyPerLead,
+      // ... add other fields you expect from frontend
+    } = req.body;
+    
+    const campaign = new Campaign({
+      title,
+      description,
+      formLink,
+      moneyPerLead,
+      admin: req.user._id,
+      // ... add other fields if required
+    });
+        await campaign.save();
 res.status(201).json({ message: 'Campaign created successfully', campaign });
 
   } catch (err) {
@@ -124,18 +139,28 @@ exports.updateApplicationStatus = async (req, res) => {
 exports.updateCampaign = async (req, res) => {
   try {
     const { _id } = req.params;
+    const { formLink, moneyPerLead, title, description } = req.body;
 
-    const campaign = await Campaign.findByIdAndUpdate(_id, req.body, { new: true });
+    const campaign = await Campaign.findById(_id);
 
     if (!campaign) {
       return res.status(404).json({ message: 'Campaign not found' });
     }
 
-    res.status(200).json({ message: 'Campaign updated successfully', campaign });
+    campaign.title = title || campaign.title;
+    campaign.description = description || campaign.description;
+    campaign.formLink = formLink || campaign.formLink;
+    campaign.moneyPerLead = moneyPerLead !== undefined ? moneyPerLead : campaign.moneyPerLead;
+
+    await campaign.save();
+
+    return res.status(200).json({ message: 'Campaign updated successfully', campaign });
+    
   } catch (err) {
-    res.status(500).json({ message: 'Error updating campaign', error: err.message });
+    return res.status(500).json({ message: 'Error updating campaign', error: err.message });
   }
 };
+
 exports.deleteCampaign = async (req, res) => {
   try {
     const { _id } = req.params;
